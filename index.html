@@ -3,9 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
+    <title>Weekday Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .year-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .year-selector button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .year-selector button:hover {
+            background: #5568d3;
+        }
+
+        .year-selector span {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .date-display {
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f7f7f7;
+            border-radius: 10px;
+        }
+
+        .weekday-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .weekday-buttons button {
+            padding: 15px 20px;
+            font-size: 1.1em;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .weekday-buttons button:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .weekday-buttons button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .feedback {
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            min-height: 60px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .feedback.wrong {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .score {
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .next-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .next-button:hover {
+            background: #218838;
+        }
+
+        .next-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
-    <h1>Hello World</h1>
+    <div class="container">
+        <h1>📅 Weekday Game</h1>
+
+        <div class="year-selector">
+            <button id="prevYear">←</button>
+            <span id="yearDisplay">2025</span>
+            <button id="nextYear">→</button>
+        </div>
+
+        <div class="date-display" id="dateDisplay">
+            01 / 01 / 2025
+        </div>
+
+        <div class="weekday-buttons" id="weekdayButtons">
+            <button data-day="1">Monday</button>
+            <button data-day="2">Tuesday</button>
+            <button data-day="3">Wednesday</button>
+            <button data-day="4">Thursday</button>
+            <button data-day="5">Friday</button>
+            <button data-day="6">Saturday</button>
+            <button data-day="0">Sunday</button>
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+
+        <div class="score">
+            <span id="scoreDisplay">Score: 0 / 0</span>
+        </div>
+
+        <button class="next-button" id="nextButton" style="display: none;">Next Round</button>
+    </div>
+
+    <script type="module" src="app.js"></script>
 </body>
 </html>
