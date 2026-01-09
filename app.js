@@ -18,6 +18,7 @@ class WeekdayGame {
         this.weekdayButtons = document.querySelectorAll('#weekdayButtons button');
 
         this.initEventListeners();
+        this.updateYearDisplay();
         this.generateNewDate();
     }
 

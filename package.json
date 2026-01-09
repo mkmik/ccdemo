@@ -1,0 +1,23 @@
+{
+  "name": "weekday-game",
+  "version": "1.0.0",
+  "description": "A fun client-side JavaScript game that challenges you to guess the weekday for randomly generated dates",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug"
+  },
+  "keywords": [
+    "game",
+    "weekday",
+    "javascript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "http-server": "^14.1.1"
+  }
+}
