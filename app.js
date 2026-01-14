@@ -125,9 +125,16 @@ class WeekdayGame {
         this.showFeedback(feedbackMessage, isCorrect);
         this.updateScore();
 
-        // In voice mode, speak the feedback
+        // In voice mode, speak the feedback and automatically progress
         if (this.voiceMode) {
-            this.speak(feedbackMessage);
+            this.speak(feedbackMessage, () => {
+                // Wait 1 second after speech finishes, then move to next round
+                setTimeout(() => {
+                    if (this.voiceMode) {
+                        this.generateNewDate();
+                    }
+                }, 1000);
+            });
         } else {
             this.nextButton.style.display = 'block';
         }
@@ -316,13 +323,6 @@ class WeekdayGame {
 
         if (selectedDay !== -1) {
             this.checkAnswer(selectedDay);
-
-            // In voice mode, automatically progress to next round after feedback
-            if (this.voiceMode) {
-                setTimeout(() => {
-                    this.generateNewDate();
-                }, 2000); // Wait 2 seconds before next round
-            }
         } else {
             this.listeningIndicator.textContent = 'Didn\'t understand. Say a weekday name.';
             // Continue listening
