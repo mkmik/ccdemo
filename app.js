@@ -302,6 +302,21 @@ class WeekdayGame {
     }
 
     processVoiceInput(transcript) {
+        // Check if user wants to hear the date again
+        if (transcript.includes('say it again') ||
+            transcript.includes('repeat') ||
+            transcript.includes('say that again') ||
+            transcript.includes('what was that')) {
+            const dateText = this.getDateAsText();
+            this.speak(dateText, () => {
+                // After speaking, start listening again
+                if (this.voiceMode && !this.answered) {
+                    this.startListening();
+                }
+            });
+            return;
+        }
+
         const weekdays = {
             'monday': 1,
             'tuesday': 2,
