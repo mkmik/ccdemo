@@ -9,6 +9,12 @@ class WeekdayGame {
         this.attempts = 0;
         this.answered = false;
 
+        // Voice mode properties
+        this.voiceMode = false;
+        this.recognition = null;
+        this.synthesis = window.speechSynthesis;
+        this.isListening = false;
+
         // DOM elements
         this.yearDisplay = document.getElementById('yearDisplay');
         this.dateDisplay = document.getElementById('dateDisplay');
@@ -16,8 +22,11 @@ class WeekdayGame {
         this.scoreDisplay = document.getElementById('scoreDisplay');
         this.nextButton = document.getElementById('nextButton');
         this.weekdayButtons = document.querySelectorAll('#weekdayButtons button');
+        this.voiceModeButton = document.getElementById('voiceModeButton');
+        this.listeningIndicator = document.getElementById('listeningIndicator');
 
         this.initEventListeners();
+        this.initVoiceRecognition();
         this.updateYearDisplay();
         this.generateNewDate();
     }
@@ -49,6 +58,11 @@ class WeekdayGame {
         this.nextButton.addEventListener('click', () => {
             this.generateNewDate();
         });
+
+        // Voice mode button
+        this.voiceModeButton.addEventListener('click', () => {
+            this.toggleVoiceMode();
+        });
     }
 
     updateYearDisplay() {
@@ -69,6 +83,12 @@ class WeekdayGame {
         this.enableButtons();
         this.answered = false;
         this.nextButton.style.display = 'none';
+        this.listeningIndicator.textContent = '';
+
+        // If in voice mode, start the voice round
+        if (this.voiceMode) {
+            this.startVoiceRound();
+        }
     }
 
     displayDate() {
@@ -83,24 +103,34 @@ class WeekdayGame {
         this.answered = true;
         this.attempts++;
         this.disableButtons();
+        this.stopListening();
 
         const weekdayNames = [
             'Sunday', 'Monday', 'Tuesday', 'Wednesday',
             'Thursday', 'Friday', 'Saturday'
         ];
 
+        let feedbackMessage;
+        let isCorrect;
+
         if (selectedDay === this.correctDay) {
             this.score++;
-            this.showFeedback('Correct!', true);
+            feedbackMessage = 'Correct!';
+            isCorrect = true;
         } else {
-            this.showFeedback(
-                `Wrong! The correct answer is ${weekdayNames[this.correctDay]}`,
-                false
-            );
+            feedbackMessage = `Wrong! The correct answer is ${weekdayNames[this.correctDay]}`;
+            isCorrect = false;
         }
 
+        this.showFeedback(feedbackMessage, isCorrect);
         this.updateScore();
-        this.nextButton.style.display = 'block';
+
+        // In voice mode, speak the feedback
+        if (this.voiceMode) {
+            this.speak(feedbackMessage);
+        } else {
+            this.nextButton.style.display = 'block';
+        }
     }
 
     showFeedback(message, isCorrect) {
@@ -127,6 +157,179 @@ class WeekdayGame {
         this.weekdayButtons.forEach(button => {
             button.disabled = false;
         });
+    }
+
+    // Voice mode methods
+    initVoiceRecognition() {
+        // Check if browser supports Web Speech API
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            console.warn('Speech recognition not supported in this browser');
+            this.voiceModeButton.disabled = true;
+            this.voiceModeButton.textContent = '🎤 Voice Mode (Not Supported)';
+            return;
+        }
+
+        this.recognition = new SpeechRecognition();
+        this.recognition.continuous = false;
+        this.recognition.interimResults = false;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onstart = () => {
+            this.isListening = true;
+            this.listeningIndicator.textContent = '🎤 Listening...';
+            this.listeningIndicator.classList.add('active');
+        };
+
+        this.recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase().trim();
+            this.processVoiceInput(transcript);
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            this.isListening = false;
+            this.listeningIndicator.textContent = 'Error: ' + event.error;
+            this.listeningIndicator.classList.remove('active');
+
+            // Retry listening after error if still in voice mode and not answered
+            if (this.voiceMode && !this.answered) {
+                setTimeout(() => this.startListening(), 1000);
+            }
+        };
+
+        this.recognition.onend = () => {
+            this.isListening = false;
+            this.listeningIndicator.classList.remove('active');
+
+            // Continue listening if still in voice mode and not answered
+            if (this.voiceMode && !this.answered) {
+                this.startListening();
+            }
+        };
+    }
+
+    toggleVoiceMode() {
+        this.voiceMode = !this.voiceMode;
+
+        if (this.voiceMode) {
+            this.voiceModeButton.textContent = '🔇 Disable Voice Mode';
+            this.voiceModeButton.classList.add('active');
+            this.startVoiceRound();
+        } else {
+            this.voiceModeButton.textContent = '🎤 Enable Voice Mode';
+            this.voiceModeButton.classList.remove('active');
+            this.stopListening();
+            this.listeningIndicator.textContent = '';
+        }
+    }
+
+    startVoiceRound() {
+        if (!this.voiceMode) return;
+
+        // Speak the date
+        const dateText = this.getDateAsText();
+        this.speak(dateText, () => {
+            // After speaking, start listening for the answer
+            if (this.voiceMode && !this.answered) {
+                this.startListening();
+            }
+        });
+    }
+
+    getDateAsText() {
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const day = this.currentDate.getDate();
+        const month = months[this.currentDate.getMonth()];
+        const year = this.currentDate.getFullYear();
+
+        // Add ordinal suffix to day
+        const ordinal = this.getOrdinal(day);
+
+        return `${month} ${day}${ordinal}, ${year}`;
+    }
+
+    getOrdinal(n) {
+        const s = ['th', 'st', 'nd', 'rd'];
+        const v = n % 100;
+        return (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    speak(text, onEnd) {
+        // Cancel any ongoing speech
+        this.synthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        if (onEnd) {
+            utterance.onend = onEnd;
+        }
+
+        this.synthesis.speak(utterance);
+    }
+
+    startListening() {
+        if (!this.recognition || this.isListening || this.answered) return;
+
+        try {
+            this.recognition.start();
+        } catch (error) {
+            console.error('Error starting recognition:', error);
+        }
+    }
+
+    stopListening() {
+        if (this.recognition && this.isListening) {
+            this.recognition.stop();
+        }
+        this.listeningIndicator.textContent = '';
+        this.listeningIndicator.classList.remove('active');
+    }
+
+    processVoiceInput(transcript) {
+        const weekdays = {
+            'monday': 1,
+            'tuesday': 2,
+            'wednesday': 3,
+            'thursday': 4,
+            'friday': 5,
+            'saturday': 6,
+            'sunday': 0
+        };
+
+        // Find matching weekday
+        let selectedDay = -1;
+        for (const [day, value] of Object.entries(weekdays)) {
+            if (transcript.includes(day)) {
+                selectedDay = value;
+                break;
+            }
+        }
+
+        if (selectedDay !== -1) {
+            this.checkAnswer(selectedDay);
+
+            // In voice mode, automatically progress to next round after feedback
+            if (this.voiceMode) {
+                setTimeout(() => {
+                    this.generateNewDate();
+                }, 2000); // Wait 2 seconds before next round
+            }
+        } else {
+            this.listeningIndicator.textContent = 'Didn\'t understand. Say a weekday name.';
+            // Continue listening
+            if (this.voiceMode && !this.answered) {
+                setTimeout(() => this.startListening(), 1500);
+            }
+        }
     }
 }
 
