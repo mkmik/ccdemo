@@ -4,6 +4,7 @@
   "description": "A fun client-side JavaScript game that challenges you to guess the weekday for randomly generated dates",
   "type": "module",
   "scripts": {
+    "app": "npx http-server -p 8080 -c-1",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
