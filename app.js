@@ -253,12 +253,11 @@ class WeekdayGame {
 
         const day = this.currentDate.getDate();
         const month = months[this.currentDate.getMonth()];
-        const year = this.currentDate.getFullYear();
 
         // Add ordinal suffix to day
         const ordinal = this.getOrdinal(day);
 
-        return `${month} ${day}${ordinal}, ${year}`;
+        return `${month} ${day}${ordinal}`;
     }
 
     getOrdinal(n) {
