@@ -14,6 +14,7 @@ class WeekdayGame {
         this.recognition = null;
         this.synthesis = window.speechSynthesis;
         this.isListening = false;
+        this.wakeLock = null;
 
         // DOM elements
         this.yearDisplay = document.getElementById('yearDisplay');
@@ -27,6 +28,7 @@ class WeekdayGame {
 
         this.initEventListeners();
         this.initVoiceRecognition();
+        this.initVisibilityHandler();
         this.updateYearDisplay();
         this.generateNewDate();
     }
@@ -167,6 +169,15 @@ class WeekdayGame {
     }
 
     // Voice mode methods
+    initVisibilityHandler() {
+        // Handle page visibility changes to re-acquire wake lock if needed
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && this.voiceMode && !this.wakeLock) {
+                this.requestWakeLock();
+            }
+        });
+    }
+
     initVoiceRecognition() {
         // Check if browser supports Web Speech API
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -217,17 +228,19 @@ class WeekdayGame {
         };
     }
 
-    toggleVoiceMode() {
+    async toggleVoiceMode() {
         this.voiceMode = !this.voiceMode;
 
         if (this.voiceMode) {
             this.voiceModeButton.textContent = '🔇 Disable Voice Mode';
             this.voiceModeButton.classList.add('active');
+            await this.requestWakeLock();
             this.startVoiceRound();
         } else {
             this.voiceModeButton.textContent = '🎤 Enable Voice Mode';
             this.voiceModeButton.classList.remove('active');
             this.stopListening();
+            this.releaseWakeLock();
             this.listeningIndicator.textContent = '';
         }
     }
@@ -344,6 +357,43 @@ class WeekdayGame {
             if (this.voiceMode && !this.answered) {
                 setTimeout(() => this.startListening(), 1500);
             }
+        }
+    }
+
+    // Wake Lock methods to prevent screen lock during voice mode
+    async requestWakeLock() {
+        if (!('wakeLock' in navigator)) {
+            console.warn('Wake Lock API not supported in this browser');
+            return;
+        }
+
+        try {
+            this.wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake Lock acquired - screen will stay on');
+
+            // Re-acquire wake lock if the page becomes visible again
+            this.wakeLock.addEventListener('release', () => {
+                console.log('Wake Lock released');
+                // If still in voice mode, try to re-acquire
+                if (this.voiceMode && document.visibilityState === 'visible') {
+                    this.requestWakeLock();
+                }
+            });
+        } catch (error) {
+            console.error('Failed to acquire Wake Lock:', error);
+        }
+    }
+
+    releaseWakeLock() {
+        if (this.wakeLock) {
+            this.wakeLock.release()
+                .then(() => {
+                    this.wakeLock = null;
+                    console.log('Wake Lock manually released');
+                })
+                .catch(error => {
+                    console.error('Failed to release Wake Lock:', error);
+                });
         }
     }
 }
