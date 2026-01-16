@@ -136,7 +136,13 @@ class WeekdayGame {
                 }, 1000);
             });
         } else {
+            // Show next button as fallback, but auto-advance after delay
             this.nextButton.style.display = 'block';
+            setTimeout(() => {
+                if (this.answered && !this.voiceMode) {
+                    this.generateNewDate();
+                }
+            }, 2000);
         }
     }
 
