@@ -14,6 +14,12 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:8080',
     trace: 'on-first-retry',
+    launchOptions: {
+      args: [
+        '--mute-audio',
+        '--autoplay-policy=no-user-gesture-required',
+      ],
+    },
   },
 
   projects: [
