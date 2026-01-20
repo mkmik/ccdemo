@@ -9,8 +9,15 @@ class WeekdayGame {
         this.attempts = 0;
         this.answered = false;
 
-        // Load saved score from local storage
+        // Failure history for spaced repetition
+        this.failureHistory = [];
+        this.maxFailureHistory = 20;
+        this.consecutiveRandomDates = 0;
+        this.spacedRepetitionInterval = 4; // Every 4th date from failure history
+
+        // Load saved score and failure history from local storage
         this.loadScore();
+        this.loadFailureHistory();
 
         // Voice mode properties
         this.voiceMode = false;
@@ -75,12 +82,33 @@ class WeekdayGame {
     }
 
     generateNewDate() {
-        // Generate a random date in the selected year
-        const month = Math.floor(Math.random() * 12) + 1; // 1-12
-        const daysInMonth = new Date(this.year, month, 0).getDate();
-        const day = Math.floor(Math.random() * daysInMonth) + 1; // 1-daysInMonth
+        // Decide whether to use failure history or generate random date
+        // Every 4th random date, pick from failure history instead
+        let useFailureHistory = false;
 
-        this.currentDate = new Date(this.year, month - 1, day);
+        if (this.failureHistory.length > 0) {
+            this.consecutiveRandomDates++;
+            if (this.consecutiveRandomDates >= this.spacedRepetitionInterval) {
+                useFailureHistory = true;
+                this.consecutiveRandomDates = 0;
+            }
+        }
+
+        if (useFailureHistory) {
+            // Pick a date from failure history using spaced repetition
+            const selectedFailure = this.selectFromFailureHistory();
+            this.currentDate = new Date(selectedFailure.year, selectedFailure.month - 1, selectedFailure.day);
+            this.year = selectedFailure.year;
+            this.updateYearDisplay();
+        } else {
+            // Generate a random date in the selected year
+            const month = Math.floor(Math.random() * 12) + 1; // 1-12
+            const daysInMonth = new Date(this.year, month, 0).getDate();
+            const day = Math.floor(Math.random() * daysInMonth) + 1; // 1-daysInMonth
+
+            this.currentDate = new Date(this.year, month - 1, day);
+        }
+
         this.correctDay = this.currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
         this.displayDate();
@@ -125,6 +153,8 @@ class WeekdayGame {
         } else {
             feedbackMessage = `Wrong! The correct answer is ${weekdayNames[this.correctDay]}`;
             isCorrect = false;
+            // Add failed date to failure history
+            this.addToFailureHistory(this.currentDate);
         }
 
         this.showFeedback(feedbackMessage, isCorrect);
@@ -191,6 +221,110 @@ class WeekdayGame {
             this.score = 0;
             this.attempts = 0;
         }
+    }
+
+    loadFailureHistory() {
+        try {
+            const savedData = localStorage.getItem('weekdayGameFailureHistory');
+            if (savedData) {
+                this.failureHistory = JSON.parse(savedData);
+            }
+        } catch (error) {
+            console.error('Failed to load failure history from local storage:', error);
+            this.failureHistory = [];
+        }
+    }
+
+    saveFailureHistory() {
+        try {
+            localStorage.setItem('weekdayGameFailureHistory', JSON.stringify(this.failureHistory));
+        } catch (error) {
+            console.error('Failed to save failure history to local storage:', error);
+        }
+    }
+
+    addToFailureHistory(date) {
+        const failureEntry = {
+            day: date.getDate(),
+            month: date.getMonth() + 1,
+            year: date.getFullYear(),
+            timestamp: Date.now(),
+            failureCount: 1,
+            lastReviewed: Date.now()
+        };
+
+        // Check if this date already exists in the history
+        const existingIndex = this.failureHistory.findIndex(entry =>
+            entry.day === failureEntry.day &&
+            entry.month === failureEntry.month &&
+            entry.year === failureEntry.year
+        );
+
+        if (existingIndex !== -1) {
+            // Update existing entry - increment failure count and move to front
+            this.failureHistory[existingIndex].failureCount++;
+            this.failureHistory[existingIndex].lastReviewed = Date.now();
+            // Move to front (most recent)
+            const updated = this.failureHistory.splice(existingIndex, 1)[0];
+            this.failureHistory.unshift(updated);
+        } else {
+            // Add new entry to the front
+            this.failureHistory.unshift(failureEntry);
+
+            // Keep only the most recent 20 failures (LRU)
+            if (this.failureHistory.length > this.maxFailureHistory) {
+                this.failureHistory.pop();
+            }
+        }
+
+        this.saveFailureHistory();
+    }
+
+    selectFromFailureHistory() {
+        if (this.failureHistory.length === 0) {
+            return null;
+        }
+
+        // Implement spaced repetition algorithm
+        // Weight selection based on:
+        // 1. Time since last reviewed (older = higher priority)
+        // 2. Failure count (more failures = higher priority)
+        // 3. Add some randomness for variety
+
+        const now = Date.now();
+        const weights = this.failureHistory.map(entry => {
+            // Time weight: how long since last reviewed (in days)
+            const daysSinceReview = (now - entry.lastReviewed) / (1000 * 60 * 60 * 24);
+            const timeWeight = Math.min(daysSinceReview, 30); // Cap at 30 days
+
+            // Failure count weight: more failures = higher priority
+            const failureWeight = entry.failureCount * 2;
+
+            // Combined weight with some randomization
+            const baseWeight = timeWeight + failureWeight;
+            const randomFactor = Math.random() * 0.5 + 0.75; // 0.75 to 1.25 multiplier
+
+            return baseWeight * randomFactor;
+        });
+
+        // Select based on weighted random selection
+        const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+        let random = Math.random() * totalWeight;
+
+        for (let i = 0; i < weights.length; i++) {
+            random -= weights[i];
+            if (random <= 0) {
+                // Update last reviewed timestamp
+                this.failureHistory[i].lastReviewed = now;
+                this.saveFailureHistory();
+                return this.failureHistory[i];
+            }
+        }
+
+        // Fallback: return first entry
+        this.failureHistory[0].lastReviewed = now;
+        this.saveFailureHistory();
+        return this.failureHistory[0];
     }
 
     disableButtons() {
