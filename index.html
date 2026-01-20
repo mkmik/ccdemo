@@ -209,6 +209,131 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        .history-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .history-button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .close-button, .clear-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .close-button {
+            background: #6c757d;
+            color: white;
+        }
+
+        .close-button:hover {
+            background: #5a6268;
+        }
+
+        .clear-button {
+            background: #dc3545;
+            color: white;
+        }
+
+        .clear-button:hover {
+            background: #c82333;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .history-table th {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .history-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .history-table tr:hover {
+            background: #f7f7f7;
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1em;
+        }
     </style>
 </head>
 <body>
@@ -224,6 +349,9 @@
         <div class="mode-toggle">
             <button id="voiceModeButton" class="voice-mode-button">
                 🎤 Enable Voice Mode
+            </button>
+            <button id="historyButton" class="history-button">
+                📊 History
             </button>
         </div>
 
@@ -250,6 +378,19 @@
         </div>
 
         <button class="next-button" id="nextButton" style="display: none;">Next Round</button>
+    </div>
+
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Failure History</h2>
+            </div>
+            <div class="modal-actions">
+                <button id="closeModal" class="close-button">Close</button>
+                <button id="clearHistory" class="clear-button">Clear History</button>
+            </div>
+            <div id="historyTableContainer"></div>
+        </div>
     </div>
 
     <script type="module" src="app.js"></script>

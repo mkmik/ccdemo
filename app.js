@@ -35,6 +35,11 @@ class WeekdayGame {
         this.weekdayButtons = document.querySelectorAll('#weekdayButtons button');
         this.voiceModeButton = document.getElementById('voiceModeButton');
         this.listeningIndicator = document.getElementById('listeningIndicator');
+        this.historyButton = document.getElementById('historyButton');
+        this.historyModal = document.getElementById('historyModal');
+        this.closeModalButton = document.getElementById('closeModal');
+        this.clearHistoryButton = document.getElementById('clearHistory');
+        this.historyTableContainer = document.getElementById('historyTableContainer');
 
         this.initEventListeners();
         this.initVoiceRecognition();
@@ -74,6 +79,28 @@ class WeekdayGame {
         // Voice mode button
         this.voiceModeButton.addEventListener('click', () => {
             this.toggleVoiceMode();
+        });
+
+        // History button
+        this.historyButton.addEventListener('click', () => {
+            this.openHistoryModal();
+        });
+
+        // Close modal button
+        this.closeModalButton.addEventListener('click', () => {
+            this.closeHistoryModal();
+        });
+
+        // Clear history button
+        this.clearHistoryButton.addEventListener('click', () => {
+            this.clearFailureHistory();
+        });
+
+        // Close modal when clicking outside the modal content
+        this.historyModal.addEventListener('click', (e) => {
+            if (e.target === this.historyModal) {
+                this.closeHistoryModal();
+            }
         });
     }
 
@@ -556,6 +583,89 @@ class WeekdayGame {
             } catch (error) {
                 console.error('Failed to release Wake Lock:', error);
             }
+        }
+    }
+
+    // History modal methods
+    openHistoryModal() {
+        this.renderHistoryTable();
+        this.historyModal.classList.add('active');
+    }
+
+    closeHistoryModal() {
+        this.historyModal.classList.remove('active');
+    }
+
+    renderHistoryTable() {
+        const weekdayNames = [
+            'Sunday', 'Monday', 'Tuesday', 'Wednesday',
+            'Thursday', 'Friday', 'Saturday'
+        ];
+
+        if (this.failureHistory.length === 0) {
+            this.historyTableContainer.innerHTML = '<div class="empty-history">No failed dates yet. Keep playing!</div>';
+            return;
+        }
+
+        let tableHTML = `
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Weekday</th>
+                        <th>Failures</th>
+                        <th>Last Reviewed</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        this.failureHistory.forEach(entry => {
+            const date = new Date(entry.year, entry.month - 1, entry.day);
+            const weekday = weekdayNames[date.getDay()];
+            const dateStr = `${String(entry.day).padStart(2, '0')}/${String(entry.month).padStart(2, '0')}/${entry.year}`;
+
+            const lastReviewed = new Date(entry.lastReviewed);
+            const now = new Date();
+            const diffMs = now - lastReviewed;
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            let timeAgo;
+            if (diffMins < 1) {
+                timeAgo = 'Just now';
+            } else if (diffMins < 60) {
+                timeAgo = `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+            } else if (diffHours < 24) {
+                timeAgo = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            } else {
+                timeAgo = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            }
+
+            tableHTML += `
+                <tr>
+                    <td>${dateStr}</td>
+                    <td>${weekday}</td>
+                    <td>${entry.failureCount}</td>
+                    <td>${timeAgo}</td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `
+                </tbody>
+            </table>
+        `;
+
+        this.historyTableContainer.innerHTML = tableHTML;
+    }
+
+    clearFailureHistory() {
+        if (confirm('Are you sure you want to clear all failure history?')) {
+            this.failureHistory = [];
+            this.saveFailureHistory();
+            this.renderHistoryTable();
         }
     }
 }
