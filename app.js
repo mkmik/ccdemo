@@ -9,6 +9,9 @@ class WeekdayGame {
         this.attempts = 0;
         this.answered = false;
 
+        // Load saved score from local storage
+        this.loadScore();
+
         // Voice mode properties
         this.voiceMode = false;
         this.recognition = null;
@@ -28,6 +31,7 @@ class WeekdayGame {
         this.initEventListeners();
         this.initVoiceRecognition();
         this.updateYearDisplay();
+        this.updateScore(); // Display loaded score
         this.generateNewDate();
     }
 
@@ -158,6 +162,34 @@ class WeekdayGame {
 
     updateScore() {
         this.scoreDisplay.textContent = `Score: ${this.score} / ${this.attempts}`;
+        this.saveScore();
+    }
+
+    saveScore() {
+        const scoreData = {
+            score: this.score,
+            attempts: this.attempts
+        };
+        try {
+            localStorage.setItem('weekdayGameScore', JSON.stringify(scoreData));
+        } catch (error) {
+            console.error('Failed to save score to local storage:', error);
+        }
+    }
+
+    loadScore() {
+        try {
+            const savedData = localStorage.getItem('weekdayGameScore');
+            if (savedData) {
+                const scoreData = JSON.parse(savedData);
+                this.score = scoreData.score || 0;
+                this.attempts = scoreData.attempts || 0;
+            }
+        } catch (error) {
+            console.error('Failed to load score from local storage:', error);
+            this.score = 0;
+            this.attempts = 0;
+        }
     }
 
     disableButtons() {
