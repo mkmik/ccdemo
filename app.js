@@ -17,6 +17,7 @@ class WeekdayGame {
         this.recognition = null;
         this.synthesis = window.speechSynthesis;
         this.isListening = false;
+        this.wakeLock = null;
 
         // DOM elements
         this.yearDisplay = document.getElementById('yearDisplay');
@@ -255,18 +256,20 @@ class WeekdayGame {
         };
     }
 
-    toggleVoiceMode() {
+    async toggleVoiceMode() {
         this.voiceMode = !this.voiceMode;
 
         if (this.voiceMode) {
             this.voiceModeButton.textContent = '🔇 Disable Voice Mode';
             this.voiceModeButton.classList.add('active');
+            await this.requestWakeLock();
             this.startVoiceRound();
         } else {
             this.voiceModeButton.textContent = '🎤 Enable Voice Mode';
             this.voiceModeButton.classList.remove('active');
             this.stopListening();
             this.listeningIndicator.textContent = '';
+            await this.releaseWakeLock();
         }
     }
 
@@ -384,9 +387,46 @@ class WeekdayGame {
             }
         }
     }
+
+    // Wake Lock methods to prevent screen sleep during voice mode
+    async requestWakeLock() {
+        // Check if Wake Lock API is supported
+        if (!('wakeLock' in navigator)) {
+            console.warn('Wake Lock API not supported in this browser');
+            return;
+        }
+
+        try {
+            this.wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake Lock acquired - screen will stay on');
+
+            // Re-acquire wake lock if it's released (e.g., when tab becomes inactive)
+            this.wakeLock.addEventListener('release', () => {
+                console.log('Wake Lock released');
+                // Re-acquire if still in voice mode
+                if (this.voiceMode) {
+                    this.requestWakeLock();
+                }
+            });
+        } catch (error) {
+            console.error('Failed to acquire Wake Lock:', error);
+        }
+    }
+
+    async releaseWakeLock() {
+        if (this.wakeLock) {
+            try {
+                await this.wakeLock.release();
+                this.wakeLock = null;
+                console.log('Wake Lock released - screen can sleep');
+            } catch (error) {
+                console.error('Failed to release Wake Lock:', error);
+            }
+        }
+    }
 }
 
 // Initialize the game when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new WeekdayGame();
+    window.game = new WeekdayGame();
 });
