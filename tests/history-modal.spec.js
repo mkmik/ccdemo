@@ -71,9 +71,13 @@ test.describe('Weekday Game - History Modal', () => {
         const dateText = await page.locator('#dateDisplay').textContent();
         const [day, month, year] = dateText.split(' / ').map(s => s.trim());
 
+        // Get the correct answer and click a wrong button
+        const correctDayIndex = await page.evaluate(() => window.game.correctDay);
+        const wrongDayIndex = (correctDayIndex + 1) % 7; // Pick the next day (guaranteed wrong)
+
         // Answer incorrectly to create a failure
-        const firstButton = page.locator('#weekdayButtons button').first();
-        await firstButton.click();
+        const wrongButton = page.locator(`#weekdayButtons button[data-day="${wrongDayIndex}"]`);
+        await wrongButton.click();
 
         // Wait for feedback to show wrong answer
         const feedback = page.locator('#feedback');
