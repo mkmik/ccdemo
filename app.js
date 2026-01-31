@@ -140,6 +140,7 @@ class WeekdayGame {
 
         this.displayDate();
         this.resetFeedback();
+        this.clearButtonSelection();
         this.enableButtons();
         this.answered = false;
         this.nextButton.style.display = 'none';
@@ -163,6 +164,12 @@ class WeekdayGame {
         this.answered = true;
         this.attempts++;
         this.disableButtons();
+
+        // Mark the selected button visually
+        const selectedButton = document.querySelector(`#weekdayButtons button[data-day="${selectedDay}"]`);
+        if (selectedButton) {
+            selectedButton.classList.add('selected');
+        }
         this.stopListening();
 
         const weekdayNames = [
@@ -363,6 +370,12 @@ class WeekdayGame {
     enableButtons() {
         this.weekdayButtons.forEach(button => {
             button.disabled = false;
+        });
+    }
+
+    clearButtonSelection() {
+        this.weekdayButtons.forEach(button => {
+            button.classList.remove('selected');
         });
     }
 
